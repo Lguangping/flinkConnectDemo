@@ -9,7 +9,6 @@ import com.lgp.flink.connect.util.StateUtil;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.streaming.api.datastream.BroadcastStream;
 import org.apache.flink.streaming.api.datastream.DataStream;
-import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.co.BroadcastProcessFunction;
 import org.apache.flink.util.Collector;
@@ -37,15 +36,23 @@ public class CollectionByFindSource {
         env.execute("从来源加载测试");
     }
 
-    public static SingleOutputStreamOperator<LabelBean> broadcastSource(StreamExecutionEnvironment env) {
-        return env.addSource(new SlowRandomSource("广播源"))
-                .map(new MapFunction<LabelBean, LabelBean>() {
-                    @Override
-                    public LabelBean map(LabelBean value) throws Exception {
-                        LOGGER.info("广播流数据" + value);
-                        return value;
-                    }
-                });
+    public static DataStream<LabelBean> broadcastSource(StreamExecutionEnvironment env) {
+        return log(
+                env.addSource(new SlowRandomSource("广播源"))
+        );
+    }
+
+    /**
+     * 打印广播流数据
+     */
+    public static DataStream<LabelBean> log(DataStream<LabelBean> broadcastSource) {
+        return broadcastSource.map(new MapFunction<LabelBean, LabelBean>() {
+            @Override
+            public LabelBean map(LabelBean value) throws Exception {
+                LOGGER.info("广播流数据" + value);
+                return value;
+            }
+        });
     }
 
     public static DataStream<LabelBean> unionSource(StreamExecutionEnvironment env) {

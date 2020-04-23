@@ -11,15 +11,11 @@ import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.co.RichCoFlatMapFunction;
 import org.apache.flink.util.Collector;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * ValueState 实现连接流
  */
 public class CollectionByValueState {
-    private static final Logger LOGGER = LoggerFactory.getLogger(CollectionByValueState.class);
-
     public static void main(String[] args) throws Exception {
         StreamExecutionEnvironment env = EnvironmentUtil.createStreamEnvironment();
         DataStream<LabelBean> broadcastSource =
@@ -67,18 +63,23 @@ public class CollectionByValueState {
             if (broadcastValue == null) {
                 // 模拟后端查询 , 有可能查不到
                 broadcastLabel = "查询得到的广播源数据";
+                if (broadcastLabel != null) {
+                    broadcastState.update(
+                            new LabelBean(unionElement.getId(), broadcastLabel)
+                    );
+                } else {
+                    return;
+                }
             } else {
                 broadcastLabel = broadcastValue.getLabel();
             }
-            if (broadcastLabel != null) {
-                out.collect(
-                        new LabelTest(
-                                unionElement.getId(),
-                                broadcastLabel,
-                                unionElement.getLabel()
-                        )
-                );
-            }
+            out.collect(
+                    new LabelTest(
+                            unionElement.getId(),
+                            broadcastLabel,
+                            unionElement.getLabel()
+                    )
+            );
         }
     }
 }
