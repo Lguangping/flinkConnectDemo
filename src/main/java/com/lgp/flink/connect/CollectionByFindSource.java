@@ -3,6 +3,7 @@ package com.lgp.flink.connect;
 import com.lgp.flink.connect.bean.LabelBean;
 import com.lgp.flink.connect.bean.LabelTest;
 import com.lgp.flink.connect.source.RandomSource;
+import com.lgp.flink.connect.source.SlowRandomSource;
 import com.lgp.flink.connect.util.EnvironmentUtil;
 import com.lgp.flink.connect.util.StateUtil;
 import org.apache.flink.api.common.functions.MapFunction;
@@ -33,11 +34,11 @@ public class CollectionByFindSource {
                 .process(new FindSource())
                 .print();
 
-        env.execute("两流合并测试");
+        env.execute("从来源加载测试");
     }
 
-    private static SingleOutputStreamOperator<LabelBean> broadcastSource(StreamExecutionEnvironment env) {
-        return env.addSource(new RandomSource("广播源"))
+    public static SingleOutputStreamOperator<LabelBean> broadcastSource(StreamExecutionEnvironment env) {
+        return env.addSource(new SlowRandomSource("广播源"))
                 .map(new MapFunction<LabelBean, LabelBean>() {
                     @Override
                     public LabelBean map(LabelBean value) throws Exception {
@@ -47,7 +48,7 @@ public class CollectionByFindSource {
                 });
     }
 
-    private static DataStream<LabelBean> unionSource(StreamExecutionEnvironment env) {
+    public static DataStream<LabelBean> unionSource(StreamExecutionEnvironment env) {
         return env.addSource(new RandomSource("合并源"));
     }
 
@@ -58,7 +59,7 @@ public class CollectionByFindSource {
             String id = value.getId();
             String brocastValue = ctx.getBroadcastState(StateUtil.DESCRIPROT).get(id);
             if (brocastValue == null) {
-                // 模拟后端查询
+                // 模拟后端查询 , 有可能查不到
                 brocastValue = "查询得到的广播源数据";
             }
             if (brocastValue != null) {
